@@ -5,12 +5,12 @@ import { AlbumsService } from './albums.service';
 export class AlbumsController {
       constructor(private readonly appService: AlbumsService) {}
     
-      @Get('albums')
+      @Get('')
       async getAllAlbums() {
         return await this.appService.getAlbums();
       }
     
-      @Get('albums/:id')
+      @Get(':id')
       async getAlbumById( @Param('id', ParseIntPipe) id: number ) {
         return await this.appService.getAlbumById(id);
       }

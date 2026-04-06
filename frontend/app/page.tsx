@@ -8,7 +8,7 @@ import { API_URL } from '@/config/api';
 async function fetchAlbums(): Promise<Album[]> {
   // Делаем HTTP GET запрос к нашему NestJS
   // { cache: 'no-store' } говорит Next.js всегда ходить за свежими данными и не кэшировать их
-  const response = await fetch('${API_URL}/albums', { cache: 'no-store' });
+  const response = await fetch(`${API_URL}/albums`, { cache: 'no-store' });
   
   if (!response.ok) {
     throw new Error('Ошибка при загрузке данных с бэкенда');
