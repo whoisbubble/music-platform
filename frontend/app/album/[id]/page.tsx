@@ -1,37 +1,12 @@
 // frontend/app/album/[id]/page.tsx
 import Link from 'next/link';
-
-// 1. Описываем интерфейсы (что нам приходит от бэкенда)
-interface Artist {
-  nickname: string;
-}
-
-interface Song {
-  id: number;
-  title: string;
-}
-
-interface AsaMusic {
-  artists: Artist;
-  songs: Song;
-}
-
-interface Album {
-  id: number;
-  title: string;
-  cover_url: string;
-  asa_music: AsaMusic[];
-}
+import { Album, AsaMusic, Artist, Song } from '@/types';
+import { API_URL } from '@/config/api';
 
 // 2. Функция запроса конкретного альбома
 async function fetchAlbum(id: string): Promise<Album> {
   // Заменили localhost на 127.0.0.1
-  const response = await fetch(`http://127.0.0.1:3001/api/albums/${id}`, { cache: 'no-store' });
-  // ДЕТЕКТИВ: Выводим URL в консоль фронтенда
-  const url = `http://127.0.0.1:3001/api/albums/${id}`;
-  
-  // ДЕТЕКТИВ: Выводим URL в консоль фронтенда
-  console.log('🕵️‍♂️ Пытаюсь загрузить:', url);
+  const response = await fetch(`${API_URL}/albums/${id}`, { cache: 'no-store' });
   if (!response.ok) {
     console.log('❌ Ошибка бэкенда! Статус:', response.status);
     throw new Error('Альбом не найден');

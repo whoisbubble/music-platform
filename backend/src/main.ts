@@ -9,6 +9,10 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // ДОБАВЛЯЕМ ЭТУ СТРОЧКУ:
+  app.setGlobalPrefix('api');
+
+  
   await app.listen(process.env.PORT ?? 3001);
   console.log(`🚀 Бэкенд запущен на http://localhost:${process.env.PORT || 3001}`);
 }

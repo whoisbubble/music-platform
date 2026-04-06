@@ -1,30 +1,14 @@
 // frontend/app/page.tsx
 import Link from 'next/link';
-
-// Описываем артиста
-interface Artist {
-  nickname: string;
-}
-
-// Описываем связующую таблицу
-interface AsaMusic {
-  artists: Artist; // Связь с артистом
-}
-
-// Описываем сам альбом
-interface Album {
-  id: number;
-  title: string;
-  cover_url: string; // Заметь, поменяли имя поля!
-  asa_music: AsaMusic[]; // Массив связей
-}
+import { Album, AsaMusic, Artist, Song } from '@/types';
+import { API_URL } from '@/config/api';
 
 // 2. Пишем функцию для похода на бэкенд
 // async означает, что функция асинхронная (она не блокирует программу, пока ждет данные по сети)
 async function fetchAlbums(): Promise<Album[]> {
   // Делаем HTTP GET запрос к нашему NestJS
   // { cache: 'no-store' } говорит Next.js всегда ходить за свежими данными и не кэшировать их
-  const response = await fetch('http://localhost:3001/api/albums', { cache: 'no-store' });
+  const response = await fetch('${API_URL}/albums', { cache: 'no-store' });
   
   if (!response.ok) {
     throw new Error('Ошибка при загрузке данных с бэкенда');

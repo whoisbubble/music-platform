@@ -1,0 +1,37 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma.service';
+
+@Injectable()
+export class AlbumsService {
+    constructor(private prisma: PrismaService) {}
+
+  // Метод, который отдает альбомы
+  async getAlbums() {
+    return this.prisma.albums.findMany({
+      include: {
+        asa_music: {
+          include: {
+            artists: true
+          }
+        }
+      }
+    });
+  }
+
+  async getAlbumById(id: number) {
+        return this.prisma.albums.findUnique({
+      where: {
+        id: id
+      },
+      include: {
+        asa_music: {
+          include: {
+            artists: true,
+            songs: true
+          }
+        },
+        distributions: true
+      }
+    });
+  }
+}
