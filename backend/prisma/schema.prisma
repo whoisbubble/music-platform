@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js" 
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model albums {
+  id                Int                 @id @default(autoincrement())
+  title             String              @db.VarChar(150)
+  genre             String?             @db.VarChar(50)
+  release_date      DateTime?           @db.Date
+  distribution_id   Int?
+  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  cover_url         String?
+  distributions     distributions?      @relation(fields: [distribution_id], references: [id], onUpdate: NoAction)
+  asa_music         asa_music[]
+  collection_albums collection_albums[]
+}
+
+model app_roles {
+  id             Int              @id @default(autoincrement())
+  name           String           @unique @db.VarChar(50)
+  app_user_roles app_user_roles[]
+}
+
+model app_user_roles {
+  user_id   Int
+  role_id   Int
+  app_roles app_roles @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  app_users app_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, role_id])
+}
+
+model app_users {
+  id             Int              @id @default(autoincrement())
+  username       String           @unique @db.VarChar(50)
+  email          String           @unique @db.VarChar(100)
+  password_hash  String           @db.VarChar(255)
+  created_at     DateTime?        @default(now()) @db.Timestamp(6)
+  app_user_roles app_user_roles[]
+  audit_logins   audit_logins[]
+  chat_messages  chat_messages[]
+  collections    collections[]
+}
+
+model artists {
+  id         Int         @id @default(autoincrement())
+  nickname   String      @db.VarChar(100)
+  full_name  String?     @db.VarChar(150)
+  main_genre String?     @db.VarChar(50)
+  image_url  String?
+  asa_music  asa_music[]
+}
+
+model asa_music {
+  id           Int      @id @default(autoincrement())
+  artist_id    Int?
+  song_id      Int?
+  album_id     Int?
+  track_number Int?
+  albums       albums?  @relation(fields: [album_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  artists      artists? @relation(fields: [artist_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  songs        songs?   @relation(fields: [song_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model audit_logins {
+  id         Int        @id @default(autoincrement())
+  user_id    Int?
+  login_time DateTime?  @default(now()) @db.Timestamp(6)
+  app_users  app_users? @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model chat_messages {
+  id         Int        @id @default(autoincrement())
+  user_id    Int?
+  message    String
+  created_at DateTime?  @default(now()) @db.Timestamp(6)
+  app_users  app_users? @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model collection_albums {
+  collection_id Int
+  album_id      Int
+  added_at      DateTime?   @default(now()) @db.Timestamp(6)
+  albums        albums      @relation(fields: [album_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ca_album_id_fkey")
+  collections   collections @relation(fields: [collection_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ca_collection_id_fkey")
+
+  @@id([collection_id, album_id])
+}
+
+model collection_songs {
+  collection_id Int
+  song_id       Int
+  added_at      DateTime?   @default(now()) @db.Timestamp(6)
+  collections   collections @relation(fields: [collection_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "cs_collection_id_fkey")
+  songs         songs       @relation(fields: [song_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "cs_song_id_fkey")
+
+  @@id([collection_id, song_id])
+}
+
+model collections {
+  id                Int                 @id @default(autoincrement())
+  user_id           Int
+  title             String              @db.VarChar(150)
+  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  collection_albums collection_albums[]
+  collection_songs  collection_songs[]
+  app_users         app_users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model distributions {
+  id     Int      @id @default(autoincrement())
+  name   String   @unique @db.VarChar(100)
+  albums albums[]
+}
+
+model songs {
+  id               Int                @id @default(autoincrement())
+  title            String             @db.VarChar(150)
+  genre            String?            @db.VarChar(50)
+  audio_link       String?
+  creation_date    DateTime?          @db.Date
+  is_banned        Boolean?           @default(false)
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  asa_music        asa_music[]
+  collection_songs collection_songs[]
+}

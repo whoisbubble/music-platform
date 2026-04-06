@@ -7,7 +7,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get('albums')
-  getAllAlbums() {
-    return this.appService.getAlbums();
+  async getAllAlbums() {
+    return await this.appService.getAlbums();
   }
 }
