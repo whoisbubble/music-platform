@@ -18,4 +18,21 @@ export class AppService {
       }
     });
   }
+
+  async getAlbumById(id: number) {
+        return this.prisma.albums.findUnique({
+      where: {
+        id: id
+      },
+      include: {
+        asa_music: {
+          include: {
+            artists: true,
+            songs: true
+          }
+        },
+        distributions: true
+      }
+    });
+  }
 }

@@ -1,10 +1,22 @@
 // frontend/app/page.tsx
+import Link from 'next/link';
 
+// Описываем артиста
+interface Artist {
+  nickname: string;
+}
+
+// Описываем связующую таблицу
+interface AsaMusic {
+  artists: Artist; // Связь с артистом
+}
+
+// Описываем сам альбом
 interface Album {
   id: number;
   title: string;
-  artist: string;
-  cover: string;
+  cover_url: string; // Заметь, поменяли имя поля!
+  asa_music: AsaMusic[]; // Массив связей
 }
 
 // 2. Пишем функцию для похода на бэкенд
@@ -37,15 +49,35 @@ export default async function Home() {
         
         {/* Отрисовываем реальные данные, которые пришли по сети */}
         {albums.map((album) => (
-          <div key={album.id} className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition group cursor-pointer">
+          <Link href={`/album/${album.id}`} key={album.id} className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition group cursor-pointer">
             <img 
-              src={album.cover} 
+              src={album.cover_url} 
               alt={album.title} 
               className="w-full aspect-square object-cover rounded-md mb-4 shadow-lg group-hover:shadow-2xl transition-shadow" 
             />
             <h3 className="font-bold truncate">{album.title}</h3>
-            <p className="text-gray-400 text-sm truncate">{album.artist}</p>
+
+          {/* flex выстроит их в ряд, flex-wrap перенесет на новую строку, если они не влезут, а gap-x-1 добавит небольшой отступ */}
+          <div className="flex flex-wrap gap-x-1 items-center truncate">
+
+          {/* В map мы берем не только сам элемент и index, но и весь массив целиком (array), чтобы узнать его длину */}
+            {album.asa_music.map((asa_music, index, array) => (
+              
+              // group/artist позволяет нам сделать стили при наведении только на одного артиста
+              <span key={index} className="text-gray-400 text-sm hover:text-white hover:underline transition-colors">
+                
+                {asa_music.artists.nickname}
+                
+                {/* Если это НЕ последний артист в списке, добавляем запятую */}
+                {index < array.length - 1 && <span>,</span>}
+                
+              </span>
+            ))}
+
           </div>
+
+
+          </Link>
         ))}
 
       </div>
