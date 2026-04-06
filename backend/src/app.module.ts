@@ -4,11 +4,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { AlbumsModule } from './albums/albums.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     AlbumsModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
