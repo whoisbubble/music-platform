@@ -44,13 +44,15 @@ export default async function Home() {
           {/* flex выстроит их в ряд, flex-wrap перенесет на новую строку, если они не влезут, а gap-x-1 добавит небольшой отступ */}
           <div className="flex flex-wrap gap-x-1 items-center truncate">
 
-          {/* В map мы берем не только сам элемент и index, но и весь массив целиком (array), чтобы узнать его длину */}
-            {album.asa_music.map((asa_music, index, array) => (
+          {/* Извлекаем уникальных артистов, чтобы они не дублировались, если у них несколько треков в альбоме */}
+            {Array.from(
+              new Map(album.asa_music.map(item => [item.artists.nickname, item.artists])).values()
+            ).map((artist, index, array) => (
               
               // group/artist позволяет нам сделать стили при наведении только на одного артиста
               <span key={index} className="text-gray-400 text-sm hover:text-white hover:underline transition-colors">
                 
-                {asa_music.artists.nickname}
+                {artist.nickname}
                 
                 {/* Если это НЕ последний артист в списке, добавляем запятую */}
                 {index < array.length - 1 && <span>,</span>}

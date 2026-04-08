@@ -15,7 +15,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
     const adapter = new PrismaPg(pool);
 
-    super({adapter});
+    super({ adapter });
 
   }
 
@@ -23,6 +23,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
   async onModuleInit() {
     await this.$connect(); // Подключаемся к твоему PostgreSQL
-    console.log('📦 Успешное подключение к базе данных!');
+    console.log('Успешное подключение к базе данных!');
   }
 }
