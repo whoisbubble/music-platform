@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma.service';
 export class AlbumsService {
     constructor(private prisma: PrismaService) {}
 
-  // Метод, который отдает альбомы
+
   async getAlbums() {
     return this.prisma.albums.findMany({
       include: {

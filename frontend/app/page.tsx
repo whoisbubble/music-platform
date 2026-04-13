@@ -1,5 +1,6 @@
 // frontend/app/page.tsx
 import Link from 'next/link';
+import SearchBar from '@/components/SearchBar';
 import { Album, AsaMusic, Artist, Song } from '@/types';
 import { API_URL } from '@/config/api';
 
@@ -29,6 +30,10 @@ export default async function Home() {
     <div className="p-8">
       <h2 className="text-3xl font-bold mb-6">Популярные альбомы с Бэкенда!</h2>
       
+      <div className="mb-8">
+        <SearchBar />
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         
         {/* Отрисовываем реальные данные, которые пришли по сети */}

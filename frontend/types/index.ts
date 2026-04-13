@@ -22,3 +22,9 @@ export interface Album {
   cover_url: string;
   asa_music: AsaMusic[];
 }
+
+export interface SearchResults {
+  albums: Album[];
+  artists: Artist[];
+  songs: Song[];
+}
