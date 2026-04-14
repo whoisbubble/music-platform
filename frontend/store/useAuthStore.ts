@@ -1,49 +1,49 @@
 // frontend/store/useAuthStore.ts
 import { create } from 'zustand';
 import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie'; // Импортируем библиотеку
 
-// Описываем, что лежит в нашем токене (мы клали туда sub и email на бэкенде)
 interface JwtPayload {
   sub: number;
   email: string;
-  exp: number; // время жизни токена
+  exp: number;
 }
 
 interface AuthState {
-  user: JwtPayload | null; // Здесь будет лежать расшифрованный юзер
-  login: (token: string) => void; // Функция для входа
-  logout: () => void; // Функция для выхода
-  checkAuth: () => void; // Функция проверки при перезагрузке страницы
+  user: JwtPayload | null;
+  login: (token: string) => void;
+  logout: () => void;
+  checkAuth: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
 
-  // Когда юзер логинится: кладем токен в память, расшифровываем и сохраняем данные
   login: (token) => {
-    localStorage.setItem('token', token);
+    // Сохраняем в куки на 2 дня. Secure: true значит только по HTTPS (в деве проигнорится)
+    Cookies.set('token', token, { expires: 2, path: '/' });
     const decoded = jwtDecode<JwtPayload>(token);
     set({ user: decoded });
   },
 
-  // Когда юзер выходит: удаляем токен, стираем данные
   logout: () => {
-    localStorage.removeItem('token');
+    Cookies.remove('token', { path: '/' });
     set({ user: null });
+    window.location.href = '/login'; // Жесткий редирект для чистоты стейта
   },
 
-  // При открытии сайта проверяем, есть ли живой токен
   checkAuth: () => {
-    const token = localStorage.getItem('token');
+    const token = Cookies.get('token');
     if (token) {
       try {
         const decoded = jwtDecode<JwtPayload>(token);
-        // Проверяем, не протух ли токен (exp хранится в секундах, Date.now() в мс)
-        if (decoded.exp * 1000 < Date.now()) throw new Error('Token expired');
+        if (decoded.exp * 1000 < Date.now()) {
+          Cookies.remove('token');
+          set({ user: null });
+          return;
+        }
         set({ user: decoded });
       } catch (e) {
-        // Если токен сломан или просрочен — выкидываем его
-        localStorage.removeItem('token');
         set({ user: null });
       }
     }
