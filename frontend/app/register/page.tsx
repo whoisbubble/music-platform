@@ -45,7 +45,7 @@ export default function LoginPage() {
       login(data.access_token);
       
       // Перекидываем на главную
-      router.push('/');
+    window.location.href = '/';
       
     } catch (err: any) {
       setError(err.message);
