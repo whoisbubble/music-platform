@@ -1,37 +1,40 @@
-// frontend/components/SearchBar.tsx
 "use client";
 
-import { useState } from 'react';
-import { Search } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // Инструмент Next.js для переходов по страницам
+import { useState } from "react";
+import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-export default function SearchBar() {
-  const [query, setQuery] = useState('');
+interface SearchBarProps {
+  initialValue?: string;
+}
+
+export default function SearchBar({ initialValue = "" }: SearchBarProps) {
+  const [query, setQuery] = useState(initialValue);
   const router = useRouter();
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  const handleSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!query.trim()) {
+      return;
+    }
 
-    // Перекидываем пользователя на страницу поиска и передаем запрос в URL
-    router.push(`/search?q=${encodeURIComponent(query)}`);
+    router.push(`/search?q=${encodeURIComponent(query.trim())}`);
   };
 
   return (
-    <form onSubmit={handleSearch} className="w-full relative">
+    <form onSubmit={handleSearch} className="relative w-full">
       <input
         type="text"
-        placeholder="Поиск треков, альбомов, артистов..."
+        placeholder="Найти треки, альбомы или артистов"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="w-full bg-[#282828] text-white px-5 py-3 pr-12 rounded-full focus:outline-none focus:ring-2 focus:ring-white transition shadow-lg"
+        onChange={(event) => setQuery(event.target.value)}
+        className="w-full rounded-full border border-white/10 bg-white/6 px-5 py-3.5 pr-13 text-sm text-white outline-none transition placeholder:text-violet-200/45 focus:border-violet-300/60 focus:bg-white/10 focus:ring-4 focus:ring-violet-500/15"
       />
-      <button 
-        type="submit" 
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+      <button
+        type="submit"
+        className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-violet-500 text-white transition hover:bg-violet-400"
       >
-        {/* Иконка лупы (SVG) */}
-        <Search className='h-5 w-5'></Search>
+        <Search className="h-4 w-4" />
       </button>
     </form>
   );

@@ -1,19 +1,21 @@
-// backend/src/auth/auth.module.ts
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { JwtModule } from '@nestjs/jwt';
-import { PrismaService } from '../prisma.service'; // <-- 1. ПРОВЕРЬ ЭТОТ ИМПОРТ (путь должен быть правильным)
+import { PrismaService } from '../prisma.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET || 'MY_SUPER_SECRET_KEY', // Раз уж ты добавил .env, давай использовать его!
+      secret: process.env.JWT_SECRET || 'MY_SUPER_SECRET_KEY',
       signOptions: { expiresIn: '7d' },
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, PrismaService], // <-- 2. ПРОВЕРЬ, ЧТО PRISMA ЕСТЬ ЗДЕСЬ
+  providers: [AuthService, PrismaService, JwtAuthGuard, RolesGuard],
+  exports: [AuthService, JwtModule, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

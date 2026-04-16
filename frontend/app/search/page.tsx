@@ -1,160 +1,214 @@
-// frontend/app/search/page.tsx
 "use client";
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { API_URL } from '@/config/api';
-import { Album, Artist, Song, SearchResults } from '@/types';
-import SearchBar from '@/components/SearchBar';
+import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ExternalLink } from "lucide-react";
+import SearchBar from "@/components/SearchBar";
+import { CollectionToggleButton } from "@/components/CollectionToggleButton";
+import { apiFetch } from "@/lib/api";
+import type { SearchResults } from "@/types";
 
 function SearchContent() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  
-  const query = searchParams.get('q') || '';
-  const isBannedParam = searchParams.get('banned') === 'true';
-  
-  const [results, setResults] = useState<SearchResults | null>(null);
-  const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const query = searchParams.get("q") || "";
+  const showBanned = searchParams.get("banned") === "true";
 
-  const toggleBanned = (checked: boolean) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('banned', checked.toString());
-    router.push(`/search?${params.toString()}`);
-  };
+  const [results, setResults] = useState<SearchResults>({ albums: [], songs: [] });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!query) return;
+    if (!query) {
+      setResults({ albums: [], songs: [] });
+      return;
+    }
 
     const fetchResults = async () => {
       setLoading(true);
+      setError("");
+
       try {
-        const response = await fetch(`${API_URL}/search?q=${query}&banned=${isBannedParam}`);
-        const data = await response.json();
+        const data = await apiFetch<SearchResults>(
+          `/search?q=${encodeURIComponent(query)}&banned=${showBanned}`,
+        );
         setResults(data);
-      } catch (e) {
-        console.error("Ошибка поиска:", e);
+      } catch (fetchError) {
+        setError(fetchError instanceof Error ? fetchError.message : "Не удалось выполнить поиск");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchResults();
-  }, [query, isBannedParam]);
+    void fetchResults();
+  }, [query, showBanned]);
+
+  const toggleBanned = (checked: boolean) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("banned", String(checked));
+    router.push(`/search?${params.toString()}`);
+  };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-screen text-white">
-      
-      {/* --- ШАПКА ПОИСКА И ФИЛЬТРЫ --- */}
-      <div className="bg-neutral-900/50 p-6 rounded-2xl border border-neutral-800 mb-10 shadow-lg backdrop-blur-sm">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="w-full flex-1">
-            <h1 className="text-sm font-semibold tracking-wider text-green-500 uppercase mb-3">Поиск по медиатеке</h1>
-            <SearchBar />
-            </div>
-          
-          {query && (
-            <div className="flex flex-col items-end gap-2">
-              <span className="text-neutral-400 text-sm">Результаты для: <strong className="text-white">«{query}»</strong></span>
-              <label className="flex items-center gap-3 text-neutral-400 cursor-pointer hover:text-white transition group bg-neutral-800/50 px-4 py-2 rounded-full border border-neutral-700 hover:border-neutral-500">
-                <input 
-                  type="checkbox" 
-                  checked={isBannedParam}
-                  onChange={(e) => toggleBanned(e.target.checked)}
-                  className="w-4 h-4 accent-red-500 rounded cursor-pointer"
-                />
-                <span className="text-sm font-medium">Скрытые треки</span>
-              </label>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="space-y-8">
+      <section className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur md:p-8">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div className="min-w-0">
+            <div className="mb-3 text-xs uppercase tracking-[0.3em] text-violet-200/55">search center</div>
+            <h1 className="safe-text mb-4 text-3xl font-bold text-white">Поиск по реальному каталогу</h1>
+            <SearchBar initialValue={query} />
+          </div>
 
-      {/* --- ИНДИКАТОР ЗАГРУЗКИ --- */}
+          <label className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-black/20 px-4 py-3 text-sm text-violet-100/65">
+            <input
+              type="checkbox"
+              checked={showBanned}
+              onChange={(event) => toggleBanned(event.target.checked)}
+              className="h-4 w-4 accent-violet-500"
+            />
+            Показывать скрытые треки
+          </label>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <div className="rounded-[1.4rem] border border-white/10 bg-black/15 p-4">
+            <div className="text-xs uppercase tracking-[0.24em] text-violet-200/55">albums</div>
+            <div className="mt-3 text-3xl font-bold text-white">{results.albums.length}</div>
+          </div>
+          <div className="rounded-[1.4rem] border border-white/10 bg-black/15 p-4">
+            <div className="text-xs uppercase tracking-[0.24em] text-violet-200/55">tracks</div>
+            <div className="mt-3 text-3xl font-bold text-white">{results.songs.length}</div>
+          </div>
+          <div className="rounded-[1.4rem] border border-white/10 bg-black/15 p-4">
+            <div className="text-xs uppercase tracking-[0.24em] text-violet-200/55">query</div>
+            <div className="safe-text mt-3 text-lg font-semibold text-white">{query || "Введите запрос"}</div>
+          </div>
+        </div>
+      </section>
+
       {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+        <div className="rounded-[2rem] border border-white/10 bg-white/5 px-6 py-16 text-center text-violet-100/62">
+          Ищем совпадения...
+        </div>
+      ) : error ? (
+        <div className="rounded-[2rem] border border-red-400/20 bg-red-500/10 px-6 py-6 text-red-200">
+          {error}
+        </div>
+      ) : !query ? (
+        <div className="rounded-[2rem] border border-white/10 bg-white/5 px-6 py-16 text-center text-violet-100/62">
+          Введите запрос, чтобы найти треки и альбомы.
         </div>
       ) : (
-        <div className="space-y-14">
-          
-          {/* --- АРТИСТЫ --- */}
-          {results?.artists && results.artists.length > 0 && (
-            <section>
-              <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
-                Артисты
-                <span className="text-xs bg-neutral-800 text-neutral-400 px-2 py-1 rounded-full">{results.artists.length}</span>
-              </h2>
-              <div className="flex flex-wrap gap-4">
-                {results.artists.map(artist => (
-                  <div key={artist.nickname} className="bg-gradient-to-br from-neutral-800 to-neutral-900 px-6 py-3 rounded-full border border-neutral-700/50 text-white font-medium shadow-md hover:scale-105 hover:border-green-500/50 transition-all cursor-pointer">
-                    {artist.nickname}
+        <div className="space-y-10">
+          <section>
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Альбомы</h2>
+              <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs uppercase tracking-[0.24em] text-violet-200/55">
+                {results.albums.length}
+              </span>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {results.albums.map((album) => (
+                <article
+                  key={album.id}
+                  className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03))] p-4 shadow-[0_14px_45px_rgba(2,2,12,.28)]"
+                >
+                  <div className="mb-4 overflow-hidden rounded-[1.3rem]">
+                    <img
+                      src={album.coverUrl || "https://placehold.co/600x600/1a1228/ffffff?text=Album"}
+                      alt={album.title}
+                      className="aspect-square w-full object-cover"
+                    />
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* --- АЛЬБОМЫ --- */}
-          {results?.albums && results.albums.length > 0 && (
-            <section>
-              <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
-                Альбомы
-                <span className="text-xs bg-neutral-800 text-neutral-400 px-2 py-1 rounded-full">{results.albums.length}</span>
-              </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                {results.albums.map((album) => (
-                  <Link href={`/album/${album.id}`} key={album.id} className="group bg-neutral-900 p-4 rounded-xl hover:bg-neutral-800 border border-transparent hover:border-neutral-700 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-green-500/5 block">
-                    <div className="relative aspect-square mb-4 overflow-hidden rounded-lg shadow-md">
-                      <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/album/${album.id}`} className="safe-text block text-xl font-bold text-white">
+                        {album.title}
+                      </Link>
+                      <p className="safe-text mt-2 text-sm text-violet-100/62">
+                        {album.artists.map((artist) => artist.nickname).join(", ") || "Без артиста"}
+                      </p>
+                      <div className="safe-text mt-3 text-xs uppercase tracking-[0.24em] text-violet-200/45">
+                        {album.trackCount} tracks
+                        {album.genre ? ` • ${album.genre}` : ""}
+                      </div>
                     </div>
-                    <span className="text-white font-bold block truncate">{album.title}</span>
-                    <span className="text-neutral-400 text-sm block truncate mt-1">Альбом</span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
+                    <CollectionToggleButton itemType="album" itemId={album.id} />
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
 
-          {/* --- ТРЕКИ --- */}
-          {results?.songs && results.songs.length > 0 && (
-            <section>
-              <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
-                Треки
-                <span className="text-xs bg-neutral-800 text-neutral-400 px-2 py-1 rounded-full">{results.songs.length}</span>
-              </h2>
-              <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
-                {results.songs.map((song) => (
-                  <div key={song.id} className="flex items-center justify-between p-4 border-b border-neutral-800/50 last:border-0 hover:bg-white/5 transition-colors group cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      {/* Иконка вместо скучной цифры */}
-                      <svg className="w-5 h-5 text-neutral-500 group-hover:text-green-500 transition-colors" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                      <span className={`font-medium ${song.is_banned ? "text-red-400 line-through opacity-70" : "text-white"}`}>
+          <section>
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Треки</h2>
+              <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs uppercase tracking-[0.24em] text-violet-200/55">
+                {results.songs.length}
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {results.songs.map((song) => (
+                <div
+                  key={song.id}
+                  className="track-row flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 transition hover:border-violet-300/20 hover:bg-white/8 md:flex-row md:items-center md:justify-between"
+                >
+                  <a
+                    href={song.audioLink || undefined}
+                    target={song.audioLink ? "_blank" : undefined}
+                    rel={song.audioLink ? "noreferrer" : undefined}
+                    className="block min-w-0 flex-1"
+                    onClick={(event) => {
+                      if (!song.audioLink) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="track-title safe-text text-lg font-semibold text-white transition">
                         {song.title}
-                      </span>
+                      </h3>
+                      {song.isBanned && (
+                        <span className="rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-red-200">
+                          banned
+                        </span>
+                      )}
                     </div>
-                    {song.is_banned && (
-                      <span className="text-[10px] font-bold tracking-wider bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-1 rounded-full">
-                        BANNED
-                      </span>
+                    <p className="safe-text mt-2 text-sm text-violet-100/62">
+                      {song.artists.map((artist) => artist.nickname).join(", ") || "Без артиста"}
+                    </p>
+                    {song.albums.length > 0 && (
+                      <p className="safe-text mt-1 text-xs uppercase tracking-[0.24em] text-violet-200/45">
+                        {song.albums.map((album) => album.title).join(", ")}
+                      </p>
                     )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+                  </a>
 
-          {/* --- ПУСТОЙ РЕЗУЛЬТАТ --- */}
-          {query && results && results.albums.length === 0 && results.songs.length === 0 && results.artists.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center bg-neutral-900/30 rounded-2xl border border-neutral-800 border-dashed">
-              <svg className="w-16 h-16 text-neutral-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-              <h3 className="text-xl font-bold text-neutral-300 mb-2">Ничего не найдено</h3>
-              <p className="text-neutral-500 max-w-md">По запросу «{query}» нет совпадений. Попробуйте изменить фильтры или ввести другое название.</p>
+                  <div className="flex shrink-0 flex-wrap items-center gap-3">
+                    {song.audioLink && (
+                      <a
+                        href={song.audioLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-violet-100/72 transition hover:border-violet-300/20 hover:bg-violet-500/10"
+                      >
+                        Слушать
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                    <CollectionToggleButton itemType="song" itemId={song.id} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {results.albums.length === 0 && results.songs.length === 0 && (
+            <div className="rounded-[2rem] border border-white/10 bg-white/5 px-6 py-16 text-center text-violet-100/62">
+              По запросу “{query}” ничего не найдено.
             </div>
           )}
         </div>
@@ -165,11 +219,13 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={
-      <div className="p-8 max-w-7xl mx-auto min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="rounded-[2rem] border border-white/10 bg-white/5 px-6 py-16 text-center text-violet-100/62">
+          Загружаем поиск...
+        </div>
+      }
+    >
       <SearchContent />
     </Suspense>
   );

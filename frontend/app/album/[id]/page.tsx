@@ -1,105 +1,170 @@
-// frontend/app/album/[id]/page.tsx
-import Link from 'next/link';
-import { Album, AsaMusic, Artist, Song } from '@/types';
-import { API_URL } from '@/config/api';
+"use client";
 
-// 2. Функция запроса конкретного альбома
-async function fetchAlbum(id: string): Promise<Album> {
-  // Заменили localhost на 127.0.0.1
-  const response = await fetch(`${API_URL}/albums/${id}`, { cache: 'no-store' });
-  if (!response.ok) {
-    console.log('❌ Ошибка бэкенда! Статус:', response.status);
-    throw new Error('Альбом не найден');
-  }
-  return response.json();
-}
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { ChevronLeft, ExternalLink } from "lucide-react";
+import { CollectionToggleButton } from "@/components/CollectionToggleButton";
+import { apiFetch } from "@/lib/api";
+import type { AlbumDetail } from "@/types";
 
-// 3. Главный компонент. Он принимает params, в которых лежит наш [id] из адресной строки
-export default async function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
-  // 1. Сначала ДОЖИДАЕМСЯ распаковки параметров
-  const resolvedParams = await params;
-  
-  // 2. Теперь передаем настоящий ID (единичку), а не undefined
-  const album = await fetchAlbum(resolvedParams.id);
+export default function AlbumPage() {
+  const params = useParams<{ id: string }>();
+  const [album, setAlbum] = useState<AlbumDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // ХИТРОСТЬ №1: Достаем уникальных артистов... (и так далее, код ниже не меняется)
-  const albumArtists = Array.from(new Set(album.asa_music.map((item) => item.artists.nickname)));
-// ...
+  useEffect(() => {
+    const fetchAlbum = async () => {
+      try {
+        const data = await apiFetch<AlbumDetail>(`/albums/${params.id}`);
+        setAlbum(data);
+      } catch (fetchError) {
+        setError(fetchError instanceof Error ? fetchError.message : "Не удалось загрузить альбом");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // ХИТРОСТЬ №2: Группируем треки. Если есть "фиты", склеиваем авторов к одной песне
-  const songsMap = new Map();
-  
-  album.asa_music.forEach((item) => {
-    if (!item.songs) return; // Защита от пустых записей
-    
-    // Если песни еще нет в нашем словаре, добавляем её
-    if (!songsMap.has(item.songs.id)) {
-      songsMap.set(item.songs.id, {
-        id: item.songs.id,
-        title: item.songs.title,
-        artists: [item.artists.nickname], // Создаем массив артистов для этой песни
-      });
-    } else {
-      // Если песня уже есть (это фит!), просто докидываем второго артиста
-      songsMap.get(item.songs.id).artists.push(item.artists.nickname);
+    if (params.id) {
+      void fetchAlbum();
     }
-  });
+  }, [params.id]);
 
-  // Превращаем словарь обратно в массив для удобной отрисовки
-  const tracks = Array.from(songsMap.values());
+  if (loading) {
+    return (
+      <div className="rounded-[2rem] border border-white/10 bg-white/5 px-6 py-16 text-center text-violet-100/62">
+        Загружаем альбом...
+      </div>
+    );
+  }
+
+  if (error || !album) {
+    return (
+      <div className="rounded-[2rem] border border-red-400/20 bg-red-500/10 px-6 py-6 text-red-200">
+        {error || "Альбом не найден"}
+      </div>
+    );
+  }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto text-white">
-      
-      {/* Кнопка "Назад" */}
-      <Link href="/" className="text-gray-400 hover:text-white mb-8 inline-block transition">
-        ← Назад на главную
+    <div className="space-y-8">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-semibold text-white transition hover:border-violet-300/20 hover:bg-violet-500/10"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Назад
       </Link>
 
-      {/* ШАПКА АЛЬБОМА */}
-      <div className="flex flex-col md:flex-row gap-8 items-end mb-12">
-        <img 
-          src={album.cover_url} 
-          alt={album.title} 
-          className="w-64 h-64 object-cover shadow-2xl rounded-md"
-        />
-        <div>
-          <p className="uppercase text-sm font-bold text-gray-400 mb-2">Альбом</p>
-          <h1 className="text-5xl md:text-7xl font-extrabold mb-4">{album.title}</h1>
-          <div className="text-gray-300 font-medium">
-            {/* Выводим всех авторов альбома через запятую */}
-            {albumArtists.join(', ')} • {tracks.length} треков
-          </div>
-        </div>
-      </div>
+      <section className="ambient-border overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,.26),transparent_34%),linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.03))] p-6 md:p-8">
+        <div className="grid gap-8 md:grid-cols-[minmax(0,320px)_minmax(0,1fr)] md:items-end">
+          <img
+            src={album.coverUrl || "https://placehold.co/600x600/1a1228/ffffff?text=Album"}
+            alt={album.title}
+            className="aspect-square w-full rounded-[1.6rem] object-cover shadow-[0_24px_60px_rgba(4,4,15,.35)]"
+          />
 
-      {/* СПИСОК ТРЕКОВ */}
-      <div className="bg-[#121212] rounded-lg p-4">
-        {/* Заголовки таблицы */}
-        <div className="grid grid-cols-[50px_1fr] text-gray-400 text-sm border-b border-gray-800 pb-2 mb-4 px-4">
-          <div>#</div>
-          <div>Название</div>
-        </div>
+          <div className="min-w-0">
+            <div className="mb-3 text-xs uppercase tracking-[0.3em] text-violet-200/55">album page</div>
+            <h1 className="safe-text text-4xl font-bold text-white md:text-6xl">{album.title}</h1>
+            <p className="safe-text mt-4 max-w-2xl text-base leading-7 text-violet-100/68">
+              {album.artists.map((artist) => artist.nickname).join(", ") || "Без артиста"}
+            </p>
 
-        {/* Сами треки */}
-        {tracks.map((track, index) => (
-          <div 
-            key={track.id} 
-            className="grid grid-cols-[50px_1fr] items-center p-4 hover:bg-[#2a2929] rounded-md transition group cursor-pointer"
-          >
-            <div className="text-gray-400 group-hover:text-white">{index + 1}</div>
-            
-            <div className="flex flex-col">
-              <span className="font-medium text-white">{track.title}</span>
-              {/* Выводим авторов конкретного трека (если фит - будут через запятую) */}
-              <span className="text-sm text-gray-400">
-                {track.artists.join(', ')}
+            <div className="mt-4 flex flex-wrap gap-3 text-sm text-violet-100/62">
+              <span className="rounded-full border border-white/10 bg-white/6 px-3 py-2">
+                {album.tracks.length} треков
               </span>
+              {album.releaseDate && (
+                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-2">
+                  {new Date(album.releaseDate).getFullYear()}
+                </span>
+              )}
+              {album.distribution && (
+                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-2">
+                  {album.distribution.name}
+                </span>
+              )}
+              {album.genre && (
+                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-2">
+                  {album.genre}
+                </span>
+              )}
             </div>
-          </div>
-        ))}
-      </div>
 
+            <CollectionToggleButton itemType="album" itemId={album.id} className="mt-6" />
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] border border-white/10 bg-white/5 p-5 md:p-6">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="safe-text text-2xl font-bold text-white">Треки альбома</h2>
+          <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs uppercase tracking-[0.24em] text-violet-200/55">
+            {album.tracks.length}
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {album.tracks.map((track) => (
+            <div
+              key={track.id}
+              className="track-row flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-black/15 p-4 transition hover:border-violet-300/20 hover:bg-white/7 md:flex-row md:items-center md:justify-between"
+            >
+              <a
+                href={track.audioLink || undefined}
+                target={track.audioLink ? "_blank" : undefined}
+                rel={track.audioLink ? "noreferrer" : undefined}
+                className="block min-w-0 flex-1"
+                onClick={(event) => {
+                  if (!track.audioLink) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-500/18 text-sm font-semibold text-violet-100">
+                    {track.trackNumber ?? "?"}
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="track-title safe-text text-lg font-semibold text-white transition">
+                        {track.title}
+                      </h3>
+                      {track.isBanned && (
+                        <span className="rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-red-200">
+                          banned
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="safe-text mt-1 text-sm text-violet-100/62">
+                      {track.artists.map((artist) => artist.nickname).join(", ") || "Без артиста"}
+                    </p>
+                  </div>
+                </div>
+              </a>
+
+              <div className="flex shrink-0 flex-wrap items-center gap-3">
+                {track.audioLink && (
+                  <a
+                    href={track.audioLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-violet-100/72 transition hover:border-violet-300/20 hover:bg-violet-500/10"
+                  >
+                    Слушать
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                )}
+                <CollectionToggleButton itemType="song" itemId={track.id} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

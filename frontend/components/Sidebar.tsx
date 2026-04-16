@@ -1,113 +1,113 @@
-"use client"; // Важно! Это нужно для работы хука usePathname
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/useAuthStore';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
-import { Home, Search, Library, Mic2, Medal, LogIn, LogOut, User } from 'lucide-react';
+import { useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Album,
+  Home,
+  LogIn,
+  LogOut,
+  MessageCircle,
+  Search,
+  Shield,
+  Sparkles,
+  User,
+} from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
 
-// Выносим пункты меню в удобный массив. Если захочешь добавить новый раздел — 
-// просто допишешь сюда одну строчку!
-const navItems = [
-    { href: '/', icon: Home, label: 'Главная' },
-    { href: '/search', icon: Search, label: 'Поиск' },
-    { href: '/artists', icon: Mic2, label: 'Артисты' },
-    { href: '/library', icon: Library, label: 'Моя медиатека' },
-];
+export function Sidebar() {
+  const pathname = usePathname();
+  const { user, checkAuth, logout } = useAuthStore();
 
-export const Sidebar = () => {
-    // Получаем текущий путь (например, "/search")
-    const pathname = usePathname();
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
-    // Достаем данные и функции из нашего мозга
-    const { user, checkAuth, logout } = useAuthStore();
-    
-    // Фикс для Next.js (чтобы сервер и клиент не ругались из-за localStorage)
-    const [isMounted, setIsMounted] = useState(false);
+  const navItems = [
+    { href: "/", icon: Home, label: "Главная" },
+    { href: "/search", icon: Search, label: "Поиск" },
+    { href: "/collection", icon: Album, label: "Коллекция" },
+    { href: "/chat", icon: MessageCircle, label: "Общий чат" },
+  ];
 
-    // При первой загрузке сайдбара проверяем авторизацию
-    useEffect(() => {
-        checkAuth();
-        setIsMounted(true);
-    }, [checkAuth]);
+  if (user?.isAdmin) {
+    navItems.push({ href: "/admin", icon: Shield, label: "Админка" });
+  }
 
-    return (
-        // Добавили легкую границу справа (border-r), чтобы отделить сайдбар от контента
-        <aside className="w-64 bg-[#0a0a0a] h-screen p-6 flex flex-col border-r border-neutral-800/50">
-            
-            {/* --- ЛОГОТИП --- */}
-            <div className="mb-10 px-2">
-                <Link href="/" className="flex items-center gap-3 group">
-                    <div className="bg-green-500 p-1.5 rounded-lg text-black group-hover:scale-105 transition-transform">
-                        <Medal size={24} strokeWidth={2.5} />
-                    </div>
-                    <h1 className="text-white text-2xl font-extrabold tracking-tight">
-                        MusicMedal
-                    </h1>
-                </Link>
+  return (
+    <aside className="hidden w-72 shrink-0 border-r border-white/8 bg-[#0b0612] p-5 xl:flex xl:flex-col">
+      <Link href="/" className="mb-8 flex min-w-0 items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-500 text-white">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-xs uppercase tracking-[0.2em] text-violet-200/50">music hub</div>
+          <div className="truncate text-lg font-bold tracking-[0.04em] text-white">BOSTONCOLLECT</div>
+        </div>
+      </Link>
+
+      <nav className="space-y-1.5">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const Icon = item.icon;
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex min-w-0 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                isActive
+                  ? "bg-violet-500/18 text-white"
+                  : "text-violet-100/65 hover:bg-white/6 hover:text-white"
+              }`}
+            >
+              <Icon className={`h-5 w-5 shrink-0 ${isActive ? "text-violet-200" : "text-violet-300/65"}`} />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="text-xs uppercase tracking-[0.2em] text-violet-200/50">каталог</div>
+        <p className="mt-2 text-sm leading-6 text-violet-100/62">
+          Реальные альбомы, треки и ссылки на прослушивание.
+        </p>
+      </div>
+
+      <div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
+        {user ? (
+          <>
+            <div className="mb-4 flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-500/18 text-violet-100">
+                <User className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-white">{user.username}</div>
+                <div className="truncate text-xs text-violet-200/55">{user.email}</div>
+              </div>
             </div>
 
-            {/* --- НАВИГАЦИЯ --- */}
-            <nav className="flex flex-col gap-1.5">
-                {navItems.map((item) => {
-                    // Проверяем, находимся ли мы сейчас на странице этого пункта меню
-                    const isActive = pathname === item.href;
-                    const Icon = item.icon;
-
-                    return (
-                        <Link 
-                            key={item.href} 
-                            href={item.href} 
-                            className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 font-medium ${
-                                isActive 
-                                    // Стили для АКТИВНОЙ страницы
-                                    ? 'bg-neutral-800/80 text-white shadow-sm' 
-                                    // Стили для НЕАКТИВНОЙ страницы
-                                    : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
-                            }`}
-                        >
-                            {/* Если пункт активен — красим иконку в зеленый */}
-                            <Icon size={22} className={isActive ? 'text-green-500' : ''} />
-                            {item.label}
-                        </Link>
-                    );
-                })}
-            </nav>
-
-{/* --- БЛОК АВТОРИЗАЦИИ (ВНИЗУ) --- */}
-            <div className="mt-auto pt-6 border-t border-neutral-800/50">
-                {/* Ждем пока компонент загрузится в браузере, чтобы избежать мерцания */}
-                {!isMounted ? null : user ? (
-                    // ЕСЛИ ЮЗЕР ЗАЛОГИНИЛСЯ:
-                    <div className="flex items-center justify-between px-3 py-2 bg-neutral-800/40 rounded-xl border border-neutral-700/50">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="bg-green-500/20 p-2 rounded-full text-green-500">
-                                <User size={18} />
-                            </div>
-                            <span className="text-white font-medium truncate text-sm">
-                                {user.email}
-                            </span>
-                        </div>
-                        <button 
-                            onClick={logout} 
-                            className="text-neutral-500 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-500/10"
-                            title="Выйти"
-                        >
-                            <LogOut size={20} />
-                        </button>
-                    </div>
-                ) : (
-                    // ЕСЛИ ЮЗЕР ГОСТЬ:
-                    <Link 
-                        href="/login" 
-                        className="flex items-center gap-4 px-4 py-3 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800/40 transition-all duration-300 font-medium group"
-                    >
-                        <LogIn size={22} className="group-hover:text-green-500 transition-colors" />
-                        Войти
-                    </Link>
-                )}
-            </div>
-
-        </aside>
-    );
-};
+            <button
+              type="button"
+              onClick={logout}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-semibold text-white transition hover:border-red-300/20 hover:bg-red-500/10"
+            >
+              <LogOut className="h-4 w-4" />
+              Выйти
+            </button>
+          </>
+        ) : (
+          <Link
+            href="/login"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-semibold text-white transition hover:border-violet-300/25 hover:bg-violet-500/10"
+          >
+            <LogIn className="h-4 w-4" />
+            Войти
+          </Link>
+        )}
+      </div>
+    </aside>
+  );
+}

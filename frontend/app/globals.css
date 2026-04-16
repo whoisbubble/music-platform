@@ -1,26 +1,111 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #08050d;
+  --foreground: #f7f2ff;
+  --panel: rgba(255, 255, 255, 0.06);
+  --panel-strong: rgba(255, 255, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.1);
+  --violet-glow: rgba(168, 85, 247, 0.24);
+  --pink-glow: rgba(236, 72, 153, 0.18);
+  --cyan-glow: rgba(45, 212, 191, 0.12);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Segoe UI Variable Display", "Bahnschrift", "Trebuchet MS", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(168, 85, 247, 0.22), transparent 30%),
+    radial-gradient(circle at 85% 10%, rgba(236, 72, 153, 0.14), transparent 22%),
+    linear-gradient(180deg, #090510 0%, #0b0712 44%, #07040c 100%);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI Variable Display", "Bahnschrift", "Trebuchet MS", sans-serif;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 85%);
+  opacity: 0.35;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(168, 85, 247, 0.35);
+  color: #fff;
+}
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 60px rgba(4, 4, 16, 0.34);
+  backdrop-filter: blur(18px);
+}
+
+.ambient-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.ambient-border::after {
+  content: "";
+  position: absolute;
+  inset: -20% auto auto -10%;
+  height: 160px;
+  width: 240px;
+  background: radial-gradient(circle, var(--violet-glow), transparent 70%);
+  pointer-events: none;
+}
+
+.safe-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.track-row {
+  cursor: pointer;
+}
+
+.track-row:hover .track-title {
+  color: #ddd6fe;
 }

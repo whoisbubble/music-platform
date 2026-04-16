@@ -1,12 +1,13 @@
-// backend/src/auth/auth.controller.ts
-import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto } from './dto/auth.dto';
-import { JwtAuthGuard } from './jwt-auth.guard'; // <-- 1. Импортируем нашего охранника
+import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
+import type { AuthUser } from './interfaces/auth-user.interface';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
@@ -18,14 +19,9 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  // === 2. НОВЫЙ ЗАЩИЩЕННЫЙ МАРШРУТ ДЛЯ ТЕСТА ===
-  @UseGuards(JwtAuthGuard) // <-- ВЕШАЕМ ЗАМОК!
+  @UseGuards(JwtAuthGuard)
   @Get('me')
-  getProfile(@Request() req) {
-    // Сюда попадут только те, кто прошел проверку JwtAuthGuard.
-    return {
-      message: 'Доступ разрешен!',
-      user: req.user // Отправляем обратно данные, которые охранник достал из токена
-    };
+  getProfile(@CurrentUser() user: AuthUser) {
+    return this.authService.getProfile(user.sub);
   }
 }
