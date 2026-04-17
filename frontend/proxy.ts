@@ -1,6 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+const AUTH_COOKIE_NAME = "music_platform_token";
+
 function decodePayload(token: string) {
   try {
     const [, payload] = token.split(".");
@@ -11,14 +13,23 @@ function decodePayload(token: string) {
     const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
     const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
     const decoded = JSON.parse(atob(padded));
-    return decoded as { roles?: string[] };
+    return decoded as { roles?: string[]; exp?: number };
   } catch {
     return null;
   }
 }
 
+function isTokenUsable(token: string) {
+  const payload = decodePayload(token);
+  if (!payload) {
+    return false;
+  }
+
+  return !payload.exp || payload.exp * 1000 > Date.now();
+}
+
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get("token")?.value;
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const pathname = request.nextUrl.pathname;
 
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/register");
@@ -31,12 +42,18 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/chat") ||
     pathname.startsWith("/admin");
 
-  if (isProtectedPage && !token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (isProtectedPage && (!token || !isTokenUsable(token))) {
+    const response = NextResponse.redirect(new URL("/login", request.url));
+    response.cookies.delete(AUTH_COOKIE_NAME);
+    response.cookies.delete("token");
+    return response;
   }
 
-  if (isAuthPage && token) {
-    return NextResponse.redirect(new URL("/", request.url));
+  if (isAuthPage && token && !isTokenUsable(token)) {
+    const response = NextResponse.next();
+    response.cookies.delete(AUTH_COOKIE_NAME);
+    response.cookies.delete("token");
+    return response;
   }
 
   if (pathname.startsWith("/admin") && token) {

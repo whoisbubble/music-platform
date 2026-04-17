@@ -2,6 +2,7 @@
 
 import Cookies from "js-cookie";
 import { API_URL } from "@/config/api";
+import { AUTH_COOKIE_NAME } from "@/lib/auth-cookie";
 
 async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -44,7 +45,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}) {
 }
 
 export async function authApiFetch<T>(path: string, init: RequestInit = {}) {
-  const token = Cookies.get("token");
+  const token = Cookies.get(AUTH_COOKIE_NAME);
   if (!token) {
     throw new Error("Требуется авторизация");
   }
@@ -57,6 +58,15 @@ export async function authApiFetch<T>(path: string, init: RequestInit = {}) {
       ...(init.headers ?? {}),
     },
   });
+
+  if (response.status === 401) {
+    Cookies.remove(AUTH_COOKIE_NAME, { path: "/" });
+    Cookies.remove("token", { path: "/" });
+
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  }
 
   return parseResponse<T>(response);
 }

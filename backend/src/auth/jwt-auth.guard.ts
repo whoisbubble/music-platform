@@ -39,11 +39,15 @@ export class JwtAuthGuard implements CanActivate {
       return undefined;
     }
 
-    const tokenCookie = cookieHeader
+    const cookies = cookieHeader
       .split(';')
       .map((chunk) => chunk.trim())
-      .find((chunk) => chunk.startsWith('token='));
+      .reduce<Record<string, string>>((acc, chunk) => {
+        const [key, ...valueParts] = chunk.split('=');
+        acc[key] = valueParts.join('=');
+        return acc;
+      }, {});
 
-    return tokenCookie?.slice('token='.length);
+    return cookies.music_platform_token || cookies.token;
   }
 }
